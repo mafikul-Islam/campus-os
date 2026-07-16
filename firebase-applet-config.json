@@ -1,10 +1,12 @@
 {
-  "projectId": "remixed-project-id",
-  "appId": "remixed-app-id",
-  "apiKey": "remixed-api-key",
-  "authDomain": "remixed-auth-domain",
-  "firestoreDatabaseId": "remixed-firestore-database-id",
-  "storageBucket": "remixed-storage-bucket",
-  "messagingSenderId": "remixed-messaging-sender-id",
-  "measurementId": "remixed-measurement-id"
+  "projectId": "vu-blood-01",
+  "appId": "1:440875577946:web:a08bc2f81a5c3ce0d91e63",
+  "apiKey": "AIzaSyCjXgmy1_Gtl5iFsSky6WH3_1zr_GjBnBE",
+  "authDomain": "vu-blood-01.firebaseapp.com",
+  "firestoreDatabaseId": "ai-studio-remixcampusos-a3611fb7-a8e2-4c7b-bd20-a31d6a1e9504",
+  "storageBucket": "vu-blood-01.firebasestorage.app",
+  "messagingSenderId": "440875577946",
+  "measurementId": "",
+  "oAuthClientId": "440875577946-7e93ns625p8tl19fmgk7mqia4e5kpuhd.apps.googleusercontent.com",
+  "recaptchaSiteKey": ""
 }
