@@ -11,28 +11,41 @@ export default defineConfig(() => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
+        injectRegister: 'auto',
         workbox: {
-          maximumFileSizeToCacheInBytes: 5000000 // 5 MB
+          maximumFileSizeToCacheInBytes: 5000000, // 5 MB
+          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}']
         },
         includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
         manifest: {
           name: 'Campus OS',
           short_name: 'CampusOS',
-          description: 'University Management System',
-          theme_color: '#ffffff',
-          background_color: '#ffffff',
+          description: 'A smart, unified productivity workspace and AI-powered companion for university students.',
+          theme_color: '#6C63FF',
+          background_color: '#0f172a',
           display: 'standalone',
+          orientation: 'portrait',
+          start_url: '/',
+          scope: '/',
+          id: '/?source=pwa',
           icons: [
             {
-              src: 'pwa-192x192.png',
+              src: '/pwa-192x192.png',
               sizes: '192x192',
-              type: 'image/png'
+              type: 'image/png',
+              purpose: 'any'
             },
             {
-              src: 'pwa-512x512.png',
+              src: '/pwa-512x512.png',
               sizes: '512x512',
               type: 'image/png',
-              purpose: 'any maskable'
+              purpose: 'maskable'
+            },
+            {
+              src: '/pwa-512x512.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'any'
             }
           ]
         }

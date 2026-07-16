@@ -1,6 +1,6 @@
 {
   "name": "Remix: Campus OS",
-  "description": "",
+  "description": "A smart, unified productivity workspace and AI-powered companion for university students.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
