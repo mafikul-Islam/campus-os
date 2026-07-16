@@ -1,0 +1,111 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile for a student",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Display name of the user"
+        },
+        "university": {
+          "type": "string",
+          "description": "University name"
+        },
+        "major": {
+          "type": "string",
+          "description": "Selected field of study"
+        },
+        "cgpa": {
+          "type": "number",
+          "description": "Current CGPA"
+        },
+        "targetCgpa": {
+          "type": "number",
+          "description": "Target CGPA"
+        },
+        "creditsCompleted": {
+          "type": "number",
+          "description": "Completed academic credits"
+        },
+        "creditsTotal": {
+          "type": "number",
+          "description": "Total credits required"
+        },
+        "attendance": {
+          "type": "number",
+          "description": "Overall attendance percentage"
+        },
+        "studentId": {
+          "type": "string",
+          "description": "University Student ID"
+        },
+        "batch": {
+          "type": "string",
+          "description": "Academic cohort/batch"
+        },
+        "section": {
+          "type": "string",
+          "description": "Class section"
+        },
+        "semester": {
+          "type": "string",
+          "description": "Current semester"
+        },
+        "avatarUrl": {
+          "type": "string",
+          "description": "URL of user avatar"
+        },
+        "universityLogoUrl": {
+          "type": "string",
+          "description": "URL of university logo"
+        },
+        "departmentLogoUrl": {
+          "type": "string",
+          "description": "URL of department logo"
+        },
+        "darkMode": {
+          "type": "boolean",
+          "description": "User theme preference"
+        },
+        "classReminders": {
+          "type": "boolean",
+          "description": "Enable daily class notifications"
+        },
+        "deadlineReminders": {
+          "type": "boolean",
+          "description": "Enable upcoming deadline alerts"
+        },
+        "mfaEnabled": {
+          "type": "boolean",
+          "description": "Whether 2-step multi-factor verification is enabled"
+        },
+        "mfaPhoneNumber": {
+          "type": "string",
+          "description": "The enrolled phone number for SMS verification"
+        },
+        "mfaMethod": {
+          "type": "string",
+          "description": "The selected verification method (sms or app)"
+        }
+      },
+      "required": [
+        "name",
+        "university",
+        "major",
+        "cgpa",
+        "targetCgpa",
+        "creditsCompleted",
+        "creditsTotal",
+        "attendance"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Student user profiles indexed by Auth UID"
+    }
+  }
+}

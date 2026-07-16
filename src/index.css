@@ -1,0 +1,283 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-brand-primary: #6C63FF;
+  --color-brand-primary-dark: #4B3FCE;
+  --color-brand-secondary: #4285F4;
+  --color-brand-secondary-light: #8AB4F8;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+@layer utilities {
+  /* Beautiful custom scrollbars */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(108, 99, 255, 0.15);
+    border-radius: 10px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(108, 99, 255, 0.3);
+  }
+
+  /* Glassmorphism glass card style */
+  .glass-card {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(108, 99, 255, 0.3);
+    box-shadow: 0 8px 32px 0 rgba(108, 99, 255, 0.15), inset 0 0 0 1px rgba(108, 99, 255, 0.1);
+  }
+
+  /* Soft glowing effects */
+  .glow-purple {
+    box-shadow: 0 0 30px rgba(108, 99, 255, 0.12);
+  }
+
+  .glow-blue {
+    box-shadow: 0 0 30px rgba(66, 133, 254, 0.12);
+  }
+
+  /* Animated background gradients */
+  @keyframes gradient-bg {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  .animate-gradient {
+    background-size: 200% 200%;
+    animation: gradient-bg 12s ease infinite;
+  }
+}
+
+body {
+  background-color: transparent !important;
+}
+html {
+  background-image: url('/images/bg.png') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-attachment: fixed !important;
+  background-color: #f8fafc !important;
+}
+
+/* ================= DARK THEME OVERRIDES ================= */
+html.dark {
+  background-image: linear-gradient(rgba(11, 15, 25, 0.88), rgba(11, 15, 25, 0.88)), url('/images/bg.png') !important;
+  background-color: #0b0f19 !important;
+}
+html.dark body {
+  background-color: transparent !important;
+  color: #f1f5f9 !important;
+  color-scheme: dark;
+}
+
+/* Base structural overrides in dark mode */
+html.dark .min-h-screen {
+  background-color: transparent !important;
+}
+
+html.dark main {
+  background-color: transparent !important;
+}
+
+body::after {
+  display: none !important;
+}
+
+/* Dark mode specific background styling */
+html.dark body::after {
+  opacity: 1;
+  filter: brightness(0.4);
+}
+
+
+/* Sidebar and Header backgrounds */
+html.dark aside,
+html.dark aside.bg-white,
+html.dark aside.bg-white\/90,
+html.dark .lg\:hidden.fixed.top-0 {
+  background-color: rgba(17, 24, 39, 0.9) !important; /* Slate-900 with transparency */
+  backdrop-filter: blur(16px);
+  border-color: #1f2937 !important;
+}
+
+/* General containers, panels, and card background overrides */
+html.dark .bg-white,
+html.dark .bg-white\/95,
+html.dark .bg-white\/80 {
+  background-color: #111827 !important; /* gray-900 */
+}
+
+html.dark .bg-slate-50,
+html.dark .bg-slate-100 {
+  background-color: #1e293b !important; /* slate-800 */
+}
+
+html.dark .bg-slate-50\/50,
+html.dark .bg-slate-50\/20,
+html.dark .bg-slate-100\/10,
+html.dark .bg-slate-100\/20 {
+  background-color: rgba(31, 41, 55, 0.4) !important;
+}
+
+/* Glassmorphism glass card style in dark mode */
+html.dark .glass-card {
+  background: rgba(17, 24, 39, 0.8) !important;
+  border: 1px solid rgba(108, 99, 255, 0.2) !important;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Text Colors */
+html.dark .text-slate-900,
+html.dark .text-slate-800,
+html.dark .text-slate-700,
+html.dark .text-\[\#1e293b\],
+html.dark .text-gray-900,
+html.dark .text-gray-800 {
+  color: #f8fafc !important; /* slate-50 */
+}
+
+html.dark .text-slate-600,
+html.dark .text-slate-500,
+html.dark .text-gray-600 {
+  color: #cbd5e1 !important; /* slate-300 */
+}
+
+html.dark .text-slate-400,
+html.dark .text-slate-300,
+html.dark .text-gray-400 {
+  color: #94a3b8 !important; /* slate-400 */
+}
+
+/* Borders */
+html.dark .border-slate-100,
+html.dark .border-slate-200,
+html.dark .border-slate-200\/50,
+html.dark .border-slate-200\/60,
+html.dark .border-slate-200\/80,
+html.dark .border-slate-300,
+html.dark .border-slate-150,
+html.dark .border-gray-100,
+html.dark .border-gray-200 {
+  border-color: #1f2937 !important; /* gray-800 */
+}
+
+/* Button & interactive states in dark mode */
+html.dark button.bg-white,
+html.dark a.bg-white {
+  background-color: #1f2937 !important;
+  color: #f1f5f9 !important;
+  border-color: #374151 !important;
+}
+
+html.dark button.bg-white:hover,
+html.dark a.bg-white:hover {
+  background-color: #374151 !important;
+}
+
+html.dark .hover\:bg-slate-50:hover,
+html.dark .hover\:bg-slate-100:hover,
+html.dark .hover\:bg-slate-50\/80:hover {
+  background-color: #1f2937 !important;
+}
+
+/* Inputs, textareas, selects */
+html.dark input,
+html.dark select,
+html.dark textarea {
+  background-color: #1f2937 !important;
+  color: #f8fafc !important;
+  border-color: #374151 !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #64748b !important;
+}
+
+html.dark input:focus,
+html.dark select:focus,
+html.dark textarea:focus {
+  border-color: #6c63ff !important;
+  outline: none;
+}
+
+/* Sub-headings, meta text, badge text */
+html.dark .text-brand-primary-dark {
+  color: #a5b4fc !important;
+}
+
+/* Dialogs/Modals inside AnimatePresence */
+html.dark .fixed.inset-0.bg-slate-900\/40,
+html.dark .fixed.inset-0.bg-slate-950\/40 {
+  background-color: rgba(3, 7, 18, 0.7) !important;
+}
+
+html.dark .fixed.inset-0.z-50 .bg-white {
+  background-color: #111827 !important;
+  border-color: #1f2937 !important;
+}
+
+/* Lists and chat bubbles */
+html.dark .bg-indigo-50 {
+  background-color: rgba(108, 99, 255, 0.15) !important;
+  color: #c7d2fe !important;
+}
+
+html.dark .bg-emerald-50,
+html.dark .bg-emerald-50\/20 {
+  background-color: rgba(16, 185, 129, 0.1) !important;
+  border-color: rgba(16, 185, 129, 0.2) !important;
+}
+
+html.dark .text-emerald-800,
+html.dark .text-emerald-600 {
+  color: #34d399 !important;
+}
+
+html.dark .bg-indigo-500 {
+  background-color: #6c63ff !important;
+}
+
+html.dark .bg-blue-50 {
+  background-color: rgba(66, 133, 244, 0.15) !important;
+}
+
+html.dark .text-blue-600 {
+  color: #60a5fa !important;
+}
+
+html.dark .bg-rose-50 {
+  background-color: rgba(239, 68, 68, 0.12) !important;
+}
+
+html.dark .text-rose-600,
+html.dark .text-rose-500 {
+  color: #f87171 !important;
+}
+
+/* Chart and widget elements readability */
+html.dark .recharts-default-tooltip {
+  background-color: #111827 !important;
+  border-color: #1f2937 !important;
+  color: #f8fafc !important;
+}
+
+html.dark .recharts-text {
+  fill: #94a3b8 !important;
+}
+
+/* Calendar Month view styling support */
+html.dark .bg-slate-500 {
+  background-color: #334155 !important;
+}

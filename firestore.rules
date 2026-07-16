@@ -1,0 +1,70 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 1. Global safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+    
+    // 3. Primitive Definitions & Global Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+    
+    // 2. Validation Blueprints (Anti-Update-Gap)
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['name', 'university', 'major', 'cgpa', 'targetCgpa', 'creditsCompleted', 'creditsTotal', 'attendance'])
+        && data.name is string && data.name.size() <= 128
+        && data.university is string && data.university.size() <= 128
+        && data.major is string && data.major.size() <= 128
+        && data.cgpa is number
+        && data.targetCgpa is number
+        && data.creditsCompleted is number
+        && data.creditsTotal is number
+        && data.attendance is number
+        
+        // Optional Fields Type & Size Constraints
+        && (!data.keys().hasAny(['studentId']) || (data.studentId is string && data.studentId.size() <= 64))
+        && (!data.keys().hasAny(['batch']) || (data.batch is string && data.batch.size() <= 64))
+        && (!data.keys().hasAny(['section']) || (data.section is string && data.section.size() <= 64))
+        && (!data.keys().hasAny(['semester']) || (data.semester is string && data.semester.size() <= 64))
+        && (!data.keys().hasAny(['avatarUrl']) || (data.avatarUrl is string && data.avatarUrl.size() <= 2048))
+        && (!data.keys().hasAny(['universityLogoUrl']) || (data.universityLogoUrl is string && data.universityLogoUrl.size() <= 2048))
+        && (!data.keys().hasAny(['departmentLogoUrl']) || (data.departmentLogoUrl is string && data.departmentLogoUrl.size() <= 2048))
+        && (!data.keys().hasAny(['darkMode']) || (data.darkMode is bool))
+        && (!data.keys().hasAny(['classReminders']) || (data.classReminders is bool))
+        && (!data.keys().hasAny(['deadlineReminders']) || (data.deadlineReminders is bool))
+        && (!data.keys().hasAny(['courses']) || (data.courses is list && data.courses.size() <= 30))
+        && (!data.keys().hasAny(['mfaEnabled']) || (data.mfaEnabled is bool))
+        && (!data.keys().hasAny(['mfaPhoneNumber']) || (data.mfaPhoneNumber is string && data.mfaPhoneNumber.size() <= 64))
+        && (!data.keys().hasAny(['mfaMethod']) || (data.mfaMethod is string && data.mfaMethod.size() <= 16))
+        && (!data.keys().hasAny(['routineUploaded']) || (data.routineUploaded is bool))
+        && (!data.keys().hasAny(['publicDriveFolderUrl']) || (data.publicDriveFolderUrl is string && data.publicDriveFolderUrl.size() <= 2048))
+        && (!data.keys().hasAny(['publicDriveFolderId']) || (data.publicDriveFolderId is string && data.publicDriveFolderId.size() <= 128))
+        && (!data.keys().hasAny(['routineClasses']) || (data.routineClasses is list && data.routineClasses.size() <= 50));
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      
+      // Update/Create MUST start with validation helper as per critical syntax mandate
+      allow create: if isValidUserProfile(request.resource.data) && isOwner(userId) && isValidId(userId);
+      allow update: if isValidUserProfile(request.resource.data) && isOwner(userId) && isValidId(userId);
+      
+      allow delete: if false; // Deletion not allowed from client SDKs
+    }
+
+    match /notepad_notes/{noteId} {
+      allow read, write: if isSignedIn();
+    }
+  }
+}

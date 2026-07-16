@@ -1,0 +1,8 @@
+{
+  "name": "AI Study Assistant",
+  "description": "A streamlined AI-powered study assistant with Google and Email/Password authentication. Built with React and Express, configured for Vercel deployment.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
