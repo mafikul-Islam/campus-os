@@ -125,7 +125,7 @@ app.post("/api/gemini/notes-action", async (req, res) => {
     }
 
     const response = await ai.models.generateContent({
-      model: "gemini-flash-latest",
+      model: "gemini-2.5-flash",
       contents: userPrompt,
       config: {
         systemInstruction: systemPrompt,
@@ -185,7 +185,7 @@ app.post("/api/gemini/notes-chat", async (req, res) => {
     Maintain a professional, supportive, and clever tone. Do not make up answers not supported by the notes context, but you are free to add standard university tutoring wisdom to explain concepts cleanly.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-flash-latest",
+      model: "gemini-2.5-flash",
       contents: `Chat history:\n${previousConversation}\n\nStudent's latest question: ${lastMessage}\n\nCampusOS AI:`,
       config: {
         systemInstruction: systemPrompt,
@@ -240,7 +240,7 @@ app.post("/api/gemini/parse-expense", async (req, res) => {
     Assume today is 2026-07-11.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-flash-latest",
+      model: "gemini-2.5-flash",
       contents: `Extract expense details from: "${text}"`,
       config: {
         systemInstruction: systemPrompt,
@@ -304,7 +304,7 @@ app.post("/api/gemini/coach-chat", async (req, res) => {
     Give hyper-personalized academic advice, time management tips, deadline strategies, stress-relief guidance, and financial health suggestions. Be brief, encouraging, highly pragmatic, and structure your text with markdown headers, bold words, or bullet points. Avoid clinical or boring blocks of text. Provide 1 specific concrete action item at the end of your response!`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-flash-latest",
+      model: "gemini-2.5-flash",
       contents: `History:\n${chatHistory}\n\nStudent's Input: ${lastMsg}\n\nCoach:`,
       config: {
         systemInstruction: systemPrompt,
@@ -344,7 +344,7 @@ app.post("/api/gemini/lecture-assistant", async (req, res) => {
     The response MUST be valid JSON matching the schema provided.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-flash-latest",
+      model: "gemini-2.5-flash",
       contents: `Process the following lecture transcript titled "${title || "Selected Lecture"}":\n\n${transcript}`,
       config: {
         systemInstruction: systemPrompt,
@@ -408,7 +408,7 @@ app.post("/api/gemini/ocr-routine", async (req, res) => {
     Provide correct date codes.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-flash-latest",
+      model: "gemini-2.5-flash",
       contents: `Parse these events:\n"${description || "Monday 9:30 AM Database in room CS-402, Tuesday 11:30 AM AI Seminar in Auditorium"}"`,
       config: {
         systemInstruction: systemPrompt,
@@ -628,7 +628,7 @@ app.post("/api/routine/parse", async (req, res) => {
     If any of these fields are missing from the raw timetable cell, infer them from surrounding context or provide a default. Always return valid JSON matching the schema.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-flash-latest",
+      model: "gemini-2.5-flash",
       contents: [
         {
           inlineData: {
