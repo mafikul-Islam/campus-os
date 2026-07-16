@@ -16,7 +16,6 @@ import AnalyticsView from './components/AnalyticsView';
 import ExpensesView from './components/ExpensesView';
 import CoachView from './components/CoachView';
 import LectureAssistantView from './components/LectureAssistantView';
-import SettingsView from './components/SettingsView';
 import SplashScreen from './components/SplashScreen';
 import ProfileView from './components/ProfileView';
 import AboutDevelopersView from './components/AboutDevelopersView';
@@ -26,6 +25,7 @@ import RecentActivitiesView from './components/RecentActivitiesView';
 import NotepadView from './components/NotepadView';
 import RoutineView from './components/RoutineView';
 import AIAssistantBot from './components/AIAssistantBot';
+import { syncRoutineFromGoogleSheet } from './lib/routineSync';
 
 // Icons
 import { LayoutDashboard, Calendar as CalendarIcon, BookOpen, FolderOpen, BarChart2, CreditCard, Brain, Rocket, Settings, Menu, X, Cpu, LogOut, ArrowLeft, User, Users, MessageSquare, AlertTriangle, Download } from 'lucide-react';
@@ -343,6 +343,40 @@ export default function App() {
     });
   };
 
+  // Automatically fetch class routine from public Google Sheet whenever semester or section changes
+  useEffect(() => {
+    const loggedIn = localStorage.getItem('campus_is_logged_in') === 'true';
+    if (!loggedIn || !profile || !profile.studentId) return;
+
+    let isMounted = true;
+    const autoSyncRoutine = async () => {
+      try {
+        const res = await syncRoutineFromGoogleSheet(profile.semester || '', profile.section || '');
+        if (res.success && isMounted) {
+          // Compare with current classes to prevent infinite loop or unneeded saves
+          const currentIds = (profile.routineClasses || []).map(c => `${c.courseCode}-${c.day}-${c.time}`).join(',');
+          const newIds = res.classes.map(c => `${c.courseCode}-${c.day}-${c.time}`).join(',');
+
+          if (currentIds !== newIds) {
+            handleUpdateProfile({
+              ...profile,
+              routineClasses: res.classes,
+              routineUploaded: true
+            });
+          }
+        }
+      } catch (err) {
+        console.error("[Google Sheet Auto Sync] Failed to auto-sync routine:", err);
+      }
+    };
+
+    autoSyncRoutine();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [profile.semester, profile.section, profile.studentId]);
+
   // Scroll to top on page navigation
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
@@ -611,7 +645,6 @@ export default function App() {
     { id: 'coach', label: 'AI Tutor', icon: Brain },
     { id: 'lecture', label: 'Lecture Assistant', icon: Rocket },
     { id: 'profile', label: 'My Profile', icon: User },
-    { id: 'settings', label: 'Settings', icon: Settings },
     { id: 'about_developers', label: 'About Developers', icon: Users }
   ];
 
@@ -946,9 +979,6 @@ export default function App() {
                   onNavigate={navigateTo}
                   onBack={handleBack}
                 />
-              )}
-              {activePage === 'settings' && (
-                <SettingsView profile={profile} onUpdateProfile={handleUpdateProfile} onBack={handleBack} />
               )}
               {activePage === 'about_developers' && (
                 <AboutDevelopersView onBack={handleBack} />

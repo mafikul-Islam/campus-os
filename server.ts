@@ -445,6 +445,42 @@ app.post("/api/gemini/ocr-routine", async (req, res) => {
   }
 });
 
+// Cache for Google Sheet spreadsheet data
+let sheetCache: { data: string; timestamp: number } | null = null;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in ms
+
+app.get("/api/routine/fetch-sheet", async (req, res) => {
+  const now = Date.now();
+  if (sheetCache && (now - sheetCache.timestamp) < CACHE_TTL) {
+    console.log("[Routine Sync] Serving spreadsheet from cache");
+    return res.json({ success: true, csv: sheetCache.data, cached: true });
+  }
+
+  try {
+    const sheetUrl = "https://docs.google.com/spreadsheets/d/1Sdmr60rcZeBCa2ofswUr9mxIreIj71W9HYM1RRhvfMM/export?format=csv";
+    const response = await fetch(sheetUrl);
+    if (!response.ok) {
+      throw new Error(`Google Sheets responded with status ${response.status}`);
+    }
+    const csvData = await response.text();
+    sheetCache = { data: csvData, timestamp: now };
+    console.log("[Routine Sync] Fetched and cached fresh spreadsheet from Google Sheets");
+    return res.json({ success: true, csv: csvData, cached: false });
+  } catch (error: any) {
+    console.error("[Routine Sync] Error fetching Google Sheet:", error);
+    // Return expired cache if available for maximum robustness
+    if (sheetCache) {
+      return res.json({
+        success: true,
+        csv: sheetCache.data,
+        cached: true,
+        warning: "Served stale cache due to error"
+      });
+    }
+    return res.status(500).json({ success: false, error: error.message || "Failed to fetch spreadsheet" });
+  }
+});
+
 // 8. Dynamic OCR Schedule Routine parser for Department, Batch, and Section
 app.post("/api/routine/parse", async (req, res) => {
   const { fileData, mimeType, fileName, academicProfile } = req.body;

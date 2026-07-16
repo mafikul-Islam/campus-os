@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { UserProfile } from '../types';
+import { UserProfile, CourseDetail } from '../types';
 import { 
   Moon, 
   Bell, 
@@ -31,7 +31,10 @@ import {
   User,
   Mail,
   Phone,
-  RefreshCw
+  RefreshCw,
+  Plus,
+  Trash2,
+  School
 } from 'lucide-react';
 import { auth } from '../firebase';
 import { sendEmailVerification, verifyBeforeUpdateEmail, updatePassword } from 'firebase/auth';
@@ -48,6 +51,7 @@ interface ProfileViewProps {
 export default function ProfileView({ profile, onUpdateProfile, onSignOut, onNavigate, onBack }: ProfileViewProps) {
   // Modal states
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [activeEditTab, setActiveEditTab] = useState<'personal' | 'courses'>('personal');
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [passwordSuccess, setPasswordSuccess] = useState(false);
 
@@ -103,10 +107,10 @@ export default function ProfileView({ profile, onUpdateProfile, onSignOut, onNav
   const [editedName, setEditedName] = useState(profile.name);
   const [editedUniversity, setEditedUniversity] = useState(profile.university || 'Varendra University');
   const [editedMajor, setEditedMajor] = useState(profile.major);
-  const [editedStudentId, setEditedStudentId] = useState(profile.studentId || 'N/A');
-  const [editedBatch, setEditedBatch] = useState(profile.batch || 'N/A');
-  const [editedSection, setEditedSection] = useState(profile.section || 'N/A');
-  const [editedSemester, setEditedSemester] = useState(profile.semester || 'N/A');
+  const [editedStudentId, setEditedStudentId] = useState(profile.studentId || '');
+  const [editedBatch, setEditedBatch] = useState(profile.batch || '');
+  const [editedSection, setEditedSection] = useState(profile.section || '');
+  const [editedSemester, setEditedSemester] = useState(profile.semester || '');
   const [editedAvatarUrl, setEditedAvatarUrl] = useState(profile.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(profile.name)}&backgroundColor=0ea5e9&textColor=ffffff`);
   
   // Extra academic stats for syncing with other views if needed
@@ -115,6 +119,65 @@ export default function ProfileView({ profile, onUpdateProfile, onSignOut, onNav
   const [editedCreditsCompleted, setEditedCreditsCompleted] = useState(profile.creditsCompleted);
   const [editedCreditsTotal, setEditedCreditsTotal] = useState(profile.creditsTotal);
   const [editedAttendance, setEditedAttendance] = useState(profile.attendance);
+
+  // Active courses state
+  const [courses, setCourses] = useState<CourseDetail[]>(profile.courses || []);
+
+  // New course form state
+  const [newCourseName, setNewCourseName] = useState('');
+  const [newCourseCode, setNewCourseCode] = useState('');
+  const [newCourseAttendance, setNewCourseAttendance] = useState('90');
+  const [newCourseLecturesTotal, setNewCourseLecturesTotal] = useState('24');
+  const [newCourseLecturesAttended, setNewCourseLecturesAttended] = useState('22');
+  const [newCourseGrade, setNewCourseGrade] = useState('A');
+
+  // Sync edit form fields with incoming profile
+  useEffect(() => {
+    setEditedName(profile.name);
+    setEditedUniversity(profile.university || 'Varendra University');
+    setEditedMajor(profile.major);
+    setEditedStudentId(profile.studentId || '');
+    setEditedBatch(profile.batch || '');
+    setEditedSection(profile.section || '');
+    setEditedSemester(profile.semester || '');
+    setEditedAvatarUrl(profile.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(profile.name)}&backgroundColor=0ea5e9&textColor=ffffff`);
+    setEditedCgpa(profile.cgpa);
+    setEditedTargetCgpa(profile.targetCgpa);
+    setEditedCreditsCompleted(profile.creditsCompleted);
+    setEditedCreditsTotal(profile.creditsTotal);
+    setEditedAttendance(profile.attendance);
+    setCourses(profile.courses || []);
+  }, [profile]);
+
+  const handleAddCourse = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCourseName || !newCourseCode) return;
+
+    const newCourse: CourseDetail = {
+      id: Math.random().toString(36).substr(2, 9),
+      name: newCourseName,
+      code: newCourseCode,
+      attendance: parseFloat(newCourseAttendance) || 100,
+      grade: newCourseGrade,
+      progress: 0,
+      lecturesTotal: parseInt(newCourseLecturesTotal) || 24,
+      lecturesAttended: parseInt(newCourseLecturesAttended) || 22,
+    };
+
+    setCourses([...courses, newCourse]);
+    
+    // Clear inputs
+    setNewCourseName('');
+    setNewCourseCode('');
+    setNewCourseAttendance('90');
+    setNewCourseLecturesTotal('24');
+    setNewCourseLecturesAttended('22');
+    setNewCourseGrade('A');
+  };
+
+  const handleRemoveCourse = (id: string) => {
+    setCourses(courses.filter(c => c.id !== id));
+  };
 
   // File Upload Event Handler with max 2 MB Firestore simulation
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -197,6 +260,12 @@ export default function ProfileView({ profile, onUpdateProfile, onSignOut, onNav
   // Save profile edits
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // calculate average attendance across courses
+    const overallAttendance = courses.length > 0 
+      ? Math.round(courses.reduce((acc, curr) => acc + curr.attendance, 0) / courses.length)
+      : Number(editedAttendance) || 90;
+
     onUpdateProfile({
       ...profile,
       name: editedName,
@@ -211,7 +280,8 @@ export default function ProfileView({ profile, onUpdateProfile, onSignOut, onNav
       targetCgpa: Number(editedTargetCgpa),
       creditsCompleted: Number(editedCreditsCompleted),
       creditsTotal: Number(editedCreditsTotal),
-      attendance: Number(editedAttendance)
+      attendance: overallAttendance,
+      courses: courses
     });
     setIsEditModalOpen(false);
   };
@@ -695,6 +765,41 @@ export default function ProfileView({ profile, onUpdateProfile, onSignOut, onNav
           {/* ================= RIGHT SIDE: SETTINGS & PREFERENCES ================= */}
           <div className="space-y-6">
             
+            {/* 0. Edit Details (Migrated Settings) */}
+            <div className="space-y-3 text-left animate-none">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-3 block">
+                Profile Configuration
+              </span>
+              
+              <div className="glass-card/80 backdrop-blur-md border border-slate-100 rounded-[2.5rem] p-5 space-y-4 shadow-sm">
+                <div className="flex items-center justify-between py-1">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-500 flex items-center justify-center shrink-0">
+                      <Edit3 className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <span className="text-sm font-bold text-slate-700 block">
+                        Edit Details
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-medium block leading-tight">
+                        Update personal academic info and active courses
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <button 
+                    onClick={() => {
+                      setActiveEditTab('personal');
+                      setIsEditModalOpen(true);
+                    }}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black uppercase tracking-wider rounded-xl shadow-md hover:scale-[1.02] active:scale-95 transition-all cursor-pointer shrink-0"
+                  >
+                    Manage
+                  </button>
+                </div>
+              </div>
+            </div>
+
             {/* 3. Settings & Preferences Menu */}
             <div className="space-y-3 text-left">
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-3 block">
@@ -783,6 +888,42 @@ export default function ProfileView({ profile, onUpdateProfile, onSignOut, onNav
                   <ChevronRight className="w-4 h-4 text-slate-300 group-hover:translate-x-0.5 transition-transform" />
                 </button>
 
+              </div>
+            </div>
+
+            {/* 4. PWA Installation Guide */}
+            <div className="space-y-3 text-left animate-none">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-3 block">
+                App Installation (PWA)
+              </span>
+
+              <div className="glass-card/80 backdrop-blur-md border border-slate-100 rounded-[2.5rem] p-5 space-y-4 shadow-sm">
+                <div className="flex items-start gap-3.5">
+                  <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center shrink-0 animate-pulse">
+                    <Sparkles className="w-5 h-5 text-emerald-500" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black text-slate-800">Install Campus OS</h4>
+                    <p className="text-[11px] text-slate-500 font-medium leading-normal mt-0.5">
+                      Install this app on your mobile device or Windows computer to receive real-time class notifications, load fast offline, and launch with a standalone display.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5 pt-1 text-[10px] font-bold text-slate-600">
+                  <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                    <h5 className="text-slate-800 font-black">Android & Windows</h5>
+                    <p className="text-[9px] text-slate-400 font-medium mt-1 leading-normal">
+                      Click the <strong className="text-brand-primary">Install App</strong> button in the sidebar, or open browser menu and select "Install".
+                    </p>
+                  </div>
+                  <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                    <h5 className="text-slate-800 font-black">iOS / iPhone</h5>
+                    <p className="text-[9px] text-slate-400 font-medium mt-1 leading-normal">
+                      Tap the <strong className="text-indigo-600">Share</strong> button in Safari, then select <strong className="text-slate-800">Add to Home Screen</strong>.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -935,6 +1076,346 @@ export default function ProfileView({ profile, onUpdateProfile, onSignOut, onNav
                 <h4 className="text-sm font-black text-white uppercase tracking-wider">{profile.name}</h4>
                 <p className="text-xs text-white/60 font-bold mt-0.5">{profile.studentId || 'N/A'}</p>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ================= EDIT DETAILS MODAL OVERLAY ================= */}
+      <AnimatePresence>
+        {isEditModalOpen && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="glass-card rounded-[2.5rem] border border-slate-100 shadow-2xl p-6 md:p-8 w-full max-w-2xl text-left space-y-6 my-8 max-h-[90vh] overflow-y-auto animate-none"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100/50">
+                    <Edit3 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-md font-black text-slate-800 tracking-tight leading-none">
+                      Edit Details
+                    </h3>
+                    <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-wider">
+                      Academic profile & active courses
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="w-8 h-8 rounded-full bg-slate-50 text-slate-400 hover:text-slate-600 hover:bg-slate-100 flex items-center justify-center transition-all cursor-pointer border border-slate-100"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Tab Selector */}
+              <div className="flex bg-slate-100/80 p-1.5 rounded-2xl gap-1">
+                <button
+                  type="button"
+                  onClick={() => setActiveEditTab('personal')}
+                  className={`flex-1 py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
+                    activeEditTab === 'personal'
+                      ? 'bg-white text-slate-800 shadow-sm'
+                      : 'text-slate-400 hover:text-slate-600'
+                  }`}
+                >
+                  Personal Details
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveEditTab('courses')}
+                  className={`flex-1 py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
+                    activeEditTab === 'courses'
+                      ? 'bg-white text-slate-800 shadow-sm'
+                      : 'text-slate-400 hover:text-slate-600'
+                  }`}
+                >
+                  Add/Edit Courses
+                </button>
+              </div>
+
+              {activeEditTab === 'personal' ? (
+                /* Edit Personal Details Tab */
+                <form onSubmit={handleSaveProfile} className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Full Name</label>
+                      <input
+                        type="text"
+                        value={editedName}
+                        onChange={(e) => setEditedName(e.target.value)}
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-xs font-medium text-slate-800"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">University Name</label>
+                      <input
+                        type="text"
+                        value={editedUniversity}
+                        onChange={(e) => setEditedUniversity(e.target.value)}
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-xs font-medium text-slate-800"
+                        required
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Major / Degree Plan</label>
+                      <input
+                        type="text"
+                        value={editedMajor}
+                        onChange={(e) => setEditedMajor(e.target.value)}
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-xs font-medium text-slate-800"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Student ID</label>
+                      <input
+                        type="text"
+                        value={editedStudentId}
+                        onChange={(e) => setEditedStudentId(e.target.value)}
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-xs font-medium text-slate-800"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Batch</label>
+                      <input
+                        type="text"
+                        value={editedBatch}
+                        onChange={(e) => setEditedBatch(e.target.value)}
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-xs font-medium text-slate-800"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Semester</label>
+                      <select
+                        value={editedSemester}
+                        onChange={(e) => setEditedSemester(e.target.value)}
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-xs font-medium text-slate-800"
+                      >
+                        <option value="1st Semester">1st Semester</option>
+                        <option value="2nd Semester">2nd Semester</option>
+                        <option value="3rd Semester">3rd Semester</option>
+                        <option value="4th Semester">4th Semester</option>
+                        <option value="5th Semester">5th Semester</option>
+                        <option value="6th Semester">6th Semester</option>
+                        <option value="7th Semester">7th Semester</option>
+                        <option value="8th Semester">8th Semester</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Section</label>
+                      <select
+                        value={editedSection}
+                        onChange={(e) => setEditedSection(e.target.value)}
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-xs font-medium text-slate-800"
+                      >
+                        <option value="A">Section A</option>
+                        <option value="B">Section B</option>
+                        <option value="C">Section C</option>
+                        <option value="D">Section D</option>
+                        <option value="E">Section E</option>
+                        <option value="F">Section F</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Current CGPA</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={editedCgpa}
+                        onChange={(e) => setEditedCgpa(Number(e.target.value))}
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-xs font-medium text-slate-800"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Target CGPA</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={editedTargetCgpa}
+                        onChange={(e) => setEditedTargetCgpa(Number(e.target.value))}
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-xs font-medium text-slate-800"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Credits Completed</label>
+                      <input
+                        type="number"
+                        value={editedCreditsCompleted}
+                        onChange={(e) => setEditedCreditsCompleted(Number(e.target.value))}
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-xs font-medium text-slate-800"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Total Credits Plan</label>
+                      <input
+                        type="number"
+                        value={editedCreditsTotal}
+                        onChange={(e) => setEditedCreditsTotal(Number(e.target.value))}
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-xs font-medium text-slate-800"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setIsEditModalOpen(false)}
+                      className="px-5 py-2.5 bg-slate-100 text-slate-500 hover:text-slate-800 hover:bg-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer"
+                    >
+                      Save Details
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                /* Add/Edit Courses Tab */
+                <div className="space-y-6">
+                  {/* Course list */}
+                  <div className="space-y-3 max-h-[220px] overflow-y-auto pr-1">
+                    {courses.map((course) => (
+                      <div key={course.id} className="p-3 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between group">
+                        <div>
+                          <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-wider">{course.code}</h4>
+                          <h3 className="text-xs font-bold text-slate-800 mt-0.5">{course.name}</h3>
+                          <div className="flex items-center gap-3 mt-1 text-[10px] text-slate-500 font-medium">
+                            <span>Att: <strong className={course.attendance < 75 ? "text-rose-500" : "text-emerald-600"}>{course.attendance}%</strong></span>
+                            <span>•</span>
+                            <span>Target: <strong className="text-indigo-600">{course.grade || 'A'}</strong></span>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleRemoveCourse(course.id)}
+                          className="p-2 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
+                          title="Remove Course"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                    {courses.length === 0 && (
+                      <p className="text-xs text-slate-400 text-center py-6">No active courses. Add some below to track.</p>
+                    )}
+                  </div>
+
+                  {/* Add Course Form */}
+                  <form onSubmit={handleAddCourse} className="pt-4 border-t border-slate-150 space-y-3">
+                    <h4 className="text-[10px] font-black text-slate-700 uppercase tracking-widest flex items-center gap-1">
+                      Add New Course
+                    </h4>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="col-span-2">
+                        <input
+                          type="text"
+                          placeholder="Course Name (e.g. Advanced AI)"
+                          value={newCourseName}
+                          onChange={(e) => setNewCourseName(e.target.value)}
+                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-1 focus:ring-indigo-500 focus:outline-hidden"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <input
+                          type="text"
+                          placeholder="Course Code (e.g. CSE 304)"
+                          value={newCourseCode}
+                          onChange={(e) => setNewCourseCode(e.target.value)}
+                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-1 focus:ring-indigo-500 focus:outline-hidden"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <select
+                          value={newCourseGrade}
+                          onChange={(e) => setNewCourseGrade(e.target.value)}
+                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:ring-1 focus:ring-indigo-500 focus:outline-hidden"
+                        >
+                          <option value="A">Grade A</option>
+                          <option value="A-">Grade A-</option>
+                          <option value="B+">Grade B+</option>
+                          <option value="B">Grade B</option>
+                          <option value="C">Grade C</option>
+                        </select>
+                      </div>
+                      <div>
+                        <input
+                          type="number"
+                          placeholder="Attendance %"
+                          value={newCourseAttendance}
+                          onChange={(e) => setNewCourseAttendance(e.target.value)}
+                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-1 focus:ring-indigo-500 focus:outline-hidden"
+                          min="0"
+                          max="100"
+                        />
+                      </div>
+                      <div>
+                        <input
+                          type="number"
+                          placeholder="Total Lectures"
+                          value={newCourseLecturesTotal}
+                          onChange={(e) => setNewCourseLecturesTotal(e.target.value)}
+                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-1 focus:ring-indigo-500 focus:outline-hidden"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="pt-2 flex justify-end gap-3">
+                      <button
+                        type="submit"
+                        className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-xl transition-colors cursor-pointer shadow-sm"
+                      >
+                        Register Course
+                      </button>
+                    </div>
+                  </form>
+
+                  <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
+                    <button
+                      onClick={() => {
+                        // Trigger final profile save to write registered courses
+                        const overallAttendance = courses.length > 0 
+                          ? Math.round(courses.reduce((acc, curr) => acc + curr.attendance, 0) / courses.length)
+                          : Number(editedAttendance) || 90;
+
+                        onUpdateProfile({
+                          ...profile,
+                          courses,
+                          attendance: overallAttendance
+                        });
+                        setIsEditModalOpen(false);
+                      }}
+                      className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer"
+                    >
+                      Save Course Changes
+                    </button>
+                  </div>
+                </div>
+              )}
             </motion.div>
           </div>
         )}
