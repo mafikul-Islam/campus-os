@@ -28,7 +28,7 @@ import RoutineView from './components/RoutineView';
 import AIAssistantBot from './components/AIAssistantBot';
 
 // Icons
-import { LayoutDashboard, Calendar as CalendarIcon, BookOpen, FolderOpen, BarChart2, CreditCard, Brain, Rocket, Settings, Menu, X, Cpu, LogOut, ArrowLeft, User, Users, MessageSquare, AlertTriangle } from 'lucide-react';
+import { LayoutDashboard, Calendar as CalendarIcon, BookOpen, FolderOpen, BarChart2, CreditCard, Brain, Rocket, Settings, Menu, X, Cpu, LogOut, ArrowLeft, User, Users, MessageSquare, AlertTriangle, Download } from 'lucide-react';
 
 // Default mock initial state to load app dynamically
 const defaultProfile: UserProfile = {
@@ -44,7 +44,7 @@ const defaultProfile: UserProfile = {
   batch: "32nd Batch",
   section: "B",
   semester: "8th Semester",
-  avatarUrl: "/images/dev1.jpeg",
+  avatarUrl: "",
   universityLogoUrl: "/images/vu.png",
   departmentLogoUrl: "/images/cse.vu.jpeg",
   classReminders: true,
@@ -128,6 +128,28 @@ export default function App() {
   const [expenses, setExpenses] = useState<Expense[]>(defaultExpenses);
   const [notes, setNotes] = useState<NoteDocument[]>(defaultNotes);
   const [loadingProfile, setLoadingProfile] = useState<boolean>(true);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  
+  // Listen for PWA beforeinstallprompt event
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+      }
+    }
+  };
 
   // Background interval checking for regular classes starting in 15 mins
   useEffect(() => {
@@ -616,6 +638,7 @@ export default function App() {
               section: profileDetails.section,
               semester: profileDetails.semester,
               major: profileDetails.major,
+              avatarUrl: profileDetails.avatarUrl || profile.avatarUrl,
             };
             setProfile(updatedProfile);
             saveState('campus_profile', updatedProfile);
@@ -685,7 +708,16 @@ export default function App() {
         </nav>
 
         {/* Exit link */}
-        <div className="p-4 border-t border-slate-100">
+        <div className="p-4 border-t border-slate-100 space-y-2">
+          {deferredPrompt && (
+            <button
+              onClick={handleInstallClick}
+              className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-brand-primary bg-brand-primary/10 hover:bg-brand-primary/20 transition-all cursor-pointer"
+            >
+              <Download className="w-4.5 h-4.5" />
+              Install App
+            </button>
+          )}
           <button
             onClick={handleSignOut}
             className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-all cursor-pointer"
@@ -718,7 +750,7 @@ export default function App() {
               className="w-9 h-9 rounded-full border border-slate-200 shadow-xs overflow-hidden bg-slate-100 flex items-center justify-center cursor-pointer transition-all active:scale-90 hover:opacity-90 shrink-0"
             >
               <img 
-                src={profile.avatarUrl || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?fit=crop&w=300&h=300&q=80'} 
+                src={profile.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(profile.name)}&backgroundColor=0ea5e9&textColor=ffffff`} 
                 alt={profile.name} 
                 className="w-full h-full object-cover"
                 referrerPolicy="no-referrer"
@@ -808,12 +840,21 @@ export default function App() {
                 </div>
 
                 {/* Sign Out Action */}
-                <div className="pt-4 border-t border-slate-100 shrink-0">
+                <div className="pt-4 border-t border-slate-100 shrink-0 space-y-2">
+                  {deferredPrompt && (
+                    <button
+                      onClick={handleInstallClick}
+                      className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-brand-primary bg-brand-primary/10 hover:bg-brand-primary/20 transition-all cursor-pointer"
+                    >
+                      <Download className="w-4.5 h-4.5 shrink-0" />
+                      <span>Install App</span>
+                    </button>
+                  )}
                   <button
                     onClick={handleSignOut}
                     className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-rose-500 hover:bg-rose-50 transition-colors"
                   >
-                    <LogOut className="w-4 h-4" />
+                    <LogOut className="w-4 h-4 shrink-0" />
                     <span>Sign Out</span>
                   </button>
                 </div>

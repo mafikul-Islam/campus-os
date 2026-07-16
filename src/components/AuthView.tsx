@@ -17,6 +17,7 @@ interface AuthViewProps {
     studentId: string;
     section: string;
     semester: string;
+    avatarUrl?: string;
   }) => void;
   onBack: () => void;
 }
@@ -52,6 +53,15 @@ export default function AuthView({ onSuccess, onBack }: AuthViewProps) {
   const [regBatch, setRegBatch] = useState('');
   const [regUniversity, setRegUniversity] = useState('');
   const [regPassword, setRegPassword] = useState('');
+
+  // Onboarding States
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardStudentID, setOnboardStudentID] = useState('');
+  const [onboardSection, setOnboardSection] = useState('');
+  const [onboardSemester, setOnboardSemester] = useState('');
+  const [onboardBatch, setOnboardBatch] = useState('');
+  const [onboardUniversity, setOnboardUniversity] = useState('Varendra University');
+  const [onboardMajor, setOnboardMajor] = useState('Computer Science & Engineering');
 
   const checkAndTriggerMfa = async (firebaseUser: any, defaultRegData?: any): Promise<boolean> => {
     try {
@@ -122,21 +132,35 @@ export default function AuthView({ onSuccess, onBack }: AuthViewProps) {
     setLoading(true);
     setAuthError(null);
     try {
-      // Direct success bypass as requested by user
-      const customData = {
-        name: "Abir Mahmud Pritam",
-        university: "Varendra University",
-        major: "Computer Science & Engineering",
-        batch: "32nd Batch",
-        studentId: "231311070",
-        section: "B",
-        semester: "8th Semester",
-        avatarUrl: "/images/dev1.jpeg"
-      };
-      onSuccess(customData);
+      const userCredential = await signInWithEmailAndPassword(auth, loginEmailOrPhone, loginPassword);
+      const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
+      
+      let pData: any = {};
+      if (userDoc.exists()) {
+        pData = userDoc.data();
+      }
+
+      if (pData.studentId && pData.semester && pData.section) {
+        onSuccess({
+          name: pData.name || userCredential.user.displayName || "Student",
+          university: pData.university || "University",
+          major: pData.major || "Computer Science & Engineering",
+          batch: pData.batch || "1st Batch",
+          studentId: pData.studentId,
+          section: pData.section,
+          semester: pData.semester,
+          avatarUrl: pData.avatarUrl || userCredential.user.photoURL || ""
+        });
+      } else {
+        setPendingRegData({
+          name: pData.name || userCredential.user.displayName || "Student",
+          avatarUrl: pData.avatarUrl || userCredential.user.photoURL || ""
+        });
+        setShowOnboarding(true);
+      }
     } catch (error: any) {
-      console.error("Login bypass failed:", error);
-      setAuthError("Failed to sign in. Please try again.");
+      console.error("Login failed:", error);
+      setAuthError("Failed to sign in. Please check your credentials.");
     } finally {
       setLoading(false);
     }
@@ -147,20 +171,21 @@ export default function AuthView({ onSuccess, onBack }: AuthViewProps) {
     setLoading(true);
     setAuthError(null);
     try {
+      const userCredential = await createUserWithEmailAndPassword(auth, regEmail, regPassword);
       const regData = {
-        name: regName || "Abir Mahmud Pritam",
+        name: regName || "Student",
         university: regUniversity || "Varendra University",
         major: "Computer Science & Engineering",
         batch: regBatch || "32nd Batch",
         studentId: regStudentID || "231311070",
         section: regSection || "B",
         semester: regSemester || "8th Semester",
-        avatarUrl: "/images/dev1.jpeg"
+        avatarUrl: ""
       };
       onSuccess(regData);
     } catch (error: any) {
       console.error("Registration failed:", error);
-      setAuthError("Registration failed. Please try again.");
+      setAuthError(error.message || "Registration failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -172,17 +197,31 @@ export default function AuthView({ onSuccess, onBack }: AuthViewProps) {
     try {
       const result = await googleSignIn();
       if (result && result.user) {
-        const googleData = {
-          name: result.user.displayName || "Google User",
-          university: "Varendra University",
-          major: "Computer Science & Engineering",
-          batch: "32nd Batch",
-          studentId: result.user.uid.substring(0, 8),
-          section: "B",
-          semester: "8th Semester",
-          avatarUrl: result.user.photoURL || "/images/dev1.jpeg"
-        };
-        onSuccess(googleData);
+        const userDoc = await getDoc(doc(db, 'users', result.user.uid));
+        
+        let pData: any = {};
+        if (userDoc.exists()) {
+          pData = userDoc.data();
+        }
+
+        if (pData.studentId && pData.semester && pData.section) {
+          onSuccess({
+            name: pData.name || result.user.displayName || "Google User",
+            university: pData.university || "Varendra University",
+            major: pData.major || "Computer Science & Engineering",
+            batch: pData.batch || "32nd Batch",
+            studentId: pData.studentId,
+            section: pData.section,
+            semester: pData.semester,
+            avatarUrl: pData.avatarUrl || result.user.photoURL || ""
+          });
+        } else {
+          setPendingRegData({
+            name: pData.name || result.user.displayName || "Google User",
+            avatarUrl: pData.avatarUrl || result.user.photoURL || ""
+          });
+          setShowOnboarding(true);
+        }
       }
     } catch (error: any) {
       console.error("Google sign in failed:", error);
@@ -190,6 +229,25 @@ export default function AuthView({ onSuccess, onBack }: AuthViewProps) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleOnboardingSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!onboardStudentID || !onboardSemester || !onboardSection) {
+      setAuthError("Please fill in all required fields.");
+      return;
+    }
+    const finalData = {
+      name: pendingRegData?.name || "Student",
+      university: onboardUniversity || "Varendra University",
+      major: onboardMajor || "Computer Science & Engineering",
+      batch: onboardBatch || "32nd Batch",
+      studentId: onboardStudentID,
+      section: onboardSection,
+      semester: onboardSemester,
+      avatarUrl: pendingRegData?.avatarUrl || ""
+    };
+    onSuccess(finalData);
   };
 
   return (
@@ -231,33 +289,119 @@ export default function AuthView({ onSuccess, onBack }: AuthViewProps) {
           )}
 
           {/* Custom Tabs Slider Toggle */}
-          <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200/50 mb-8 relative">
-            <button
-              onClick={() => setActiveTab('login')}
-              disabled={loading}
-              className={`flex-1 py-2.5 text-xs font-black rounded-xl uppercase tracking-wider transition-all cursor-pointer ${
-                activeTab === 'login'
-                  ? 'bg-white text-brand-primary shadow-xs'
-                  : 'text-slate-400 hover:text-slate-700'
-              } disabled:opacity-50`}
-            >
-              Sign In
-            </button>
-            <button
-              onClick={() => setActiveTab('register')}
-              disabled={loading}
-              className={`flex-1 py-2.5 text-xs font-black rounded-xl uppercase tracking-wider transition-all cursor-pointer ${
-                activeTab === 'register'
-                  ? 'bg-white text-brand-primary shadow-xs'
-                  : 'text-slate-400 hover:text-slate-700'
-              } disabled:opacity-50`}
-            >
-              Register
-            </button>
-          </div>
+          {!showOnboarding && (
+            <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200/50 mb-8 relative">
+              <button
+                onClick={() => setActiveTab('login')}
+                disabled={loading}
+                className={`flex-1 py-2.5 text-xs font-black rounded-xl uppercase tracking-wider transition-all cursor-pointer ${
+                  activeTab === 'login'
+                    ? 'bg-white text-brand-primary shadow-xs'
+                    : 'text-slate-400 hover:text-slate-700'
+                } disabled:opacity-50`}
+              >
+                Sign In
+              </button>
+              <button
+                onClick={() => setActiveTab('register')}
+                disabled={loading}
+                className={`flex-1 py-2.5 text-xs font-black rounded-xl uppercase tracking-wider transition-all cursor-pointer ${
+                  activeTab === 'register'
+                    ? 'bg-white text-brand-primary shadow-xs'
+                    : 'text-slate-400 hover:text-slate-700'
+                } disabled:opacity-50`}
+              >
+                Register
+              </button>
+            </div>
+          )}
 
           {/* Tab Content */}
-          {activeTab === 'login' ? (
+          {showOnboarding ? (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3 }}
+              className="space-y-6"
+            >
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 mx-auto bg-brand-primary/10 rounded-full flex items-center justify-center mb-3">
+                  <GraduationCap className="w-8 h-8 text-brand-primary" />
+                </div>
+                <h3 className="text-xl font-extrabold text-slate-900">Complete Your Profile</h3>
+                <p className="text-xs text-slate-500 mt-1 font-medium">Please provide your academic details to continue.</p>
+              </div>
+
+              <form onSubmit={handleOnboardingSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    Student ID *
+                  </label>
+                  <div className="relative rounded-xl shadow-xs">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                      <Hash className="h-4 w-4 text-slate-400" />
+                    </div>
+                    <input
+                      type="text"
+                      required
+                      value={onboardStudentID}
+                      onChange={(e) => setOnboardStudentID(e.target.value)}
+                      placeholder="e.g. 231311070"
+                      className="block w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                      Semester *
+                    </label>
+                    <div className="relative rounded-xl shadow-xs">
+                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                        <Layers className="h-4 w-4 text-slate-400" />
+                      </div>
+                      <input
+                        type="text"
+                        required
+                        value={onboardSemester}
+                        onChange={(e) => setOnboardSemester(e.target.value)}
+                        placeholder="e.g. 8th"
+                        className="block w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                      Section *
+                    </label>
+                    <div className="relative rounded-xl shadow-xs">
+                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                        <User className="h-4 w-4 text-slate-400" />
+                      </div>
+                      <input
+                        type="text"
+                        required
+                        value={onboardSection}
+                        onChange={(e) => setOnboardSection(e.target.value)}
+                        placeholder="e.g. B"
+                        className="block w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl text-xs font-black uppercase tracking-wider text-white bg-linear-to-r from-brand-primary to-brand-secondary hover:from-brand-primary-dark hover:to-brand-secondary text-white shadow-md shadow-brand-primary/10 transition-all cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
+                  >
+                    Complete Registration
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          ) : activeTab === 'login' ? (
             <motion.div
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}

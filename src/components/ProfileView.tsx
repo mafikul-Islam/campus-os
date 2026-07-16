@@ -107,7 +107,7 @@ export default function ProfileView({ profile, onUpdateProfile, onSignOut, onNav
   const [editedBatch, setEditedBatch] = useState(profile.batch || 'N/A');
   const [editedSection, setEditedSection] = useState(profile.section || 'N/A');
   const [editedSemester, setEditedSemester] = useState(profile.semester || 'N/A');
-  const [editedAvatarUrl, setEditedAvatarUrl] = useState(profile.avatarUrl || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?fit=crop&w=300&h=300&q=80');
+  const [editedAvatarUrl, setEditedAvatarUrl] = useState(profile.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(profile.name)}&backgroundColor=0ea5e9&textColor=ffffff`);
   
   // Extra academic stats for syncing with other views if needed
   const [editedCgpa, setEditedCgpa] = useState(profile.cgpa);
@@ -428,7 +428,7 @@ export default function ProfileView({ profile, onUpdateProfile, onSignOut, onNav
                 <div className="relative group">
                   <div className="w-36 h-36 rounded-[2.5rem] overflow-hidden border-4 border-white shadow-md bg-slate-100 relative">
                     <img 
-                      src={profile.avatarUrl || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?fit=crop&w=300&h=300&q=80'} 
+                      src={profile.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(profile.name)}&backgroundColor=0ea5e9&textColor=ffffff`} 
                       alt={profile.name} 
                       className="w-full h-full object-cover"
                       referrerPolicy="no-referrer"
@@ -916,7 +916,7 @@ export default function ProfileView({ profile, onUpdateProfile, onSignOut, onNav
               {/* Profile Image Display */}
               <div className="w-full aspect-square rounded-[3rem] overflow-hidden border-4 border-white shadow-lg bg-slate-100">
                 <img 
-                  src={profile.avatarUrl || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?fit=crop&w=300&h=300&q=80'} 
+                  src={profile.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(profile.name)}&backgroundColor=0ea5e9&textColor=ffffff`} 
                   alt={profile.name} 
                   className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"
